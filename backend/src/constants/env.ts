@@ -1,3 +1,9 @@
+import dotenv from 'dotenv';
+
+// Cargar variables de entorno
+dotenv.config();
+
+
 function getEnv(key: string, defaultValue?: string) : string {
     const value = process.env[key] || defaultValue;
 

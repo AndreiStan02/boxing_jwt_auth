@@ -1,6 +1,5 @@
 import express from "express";
 import cookieParser from "cookie-parser";
-import { handlerLogin, handlerLogout, handlerRegister } from "./api/auth.js";
 import cors from 'cors';
 import { APP_ORIGIN, PORT } from "./constants/env.js";
 import { OK } from "./constants/http.js";

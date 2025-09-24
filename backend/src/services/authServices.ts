@@ -1,7 +1,7 @@
 import { APP_ORIGIN, JWT_REFRESH_SECRET, JWT_SECRET } from "src/constants/env.js";
 import { CONFLICT } from "src/constants/http.js";
 import  jwt  from 'jsonwebtoken';
-import { oneYearFromNow } from "src/util/date.js";
+import { oneYearFromNow, thirtyDaysFromNow } from "src/util/date.js";
 import prisma from "src/db/prismaClient.js";
 import { appAsert } from "src/util/appAsert.js";
 import bcrypt from 'bcrypt'
@@ -48,14 +48,16 @@ export const createAccount = async (data:CreateAccountParams) => {
     })
 
     // Create verification code
-    const verificationCode = await VerificationCodeModel.create({
-        userId: newUser.id,
-        type: VerificationCodeType.EmailVerification,
-        expiresAt: oneYearFromNow()
+    const newVerificationCode = await prisma.verificationCode.create({
+        data: {
+            userId: newUser.id,
+            type: VerificationCodeType.EmailVerification,
+            expiresAt: oneYearFromNow()
+        }
     })
 
     // Send verification email
-    const url = `${APP_ORIGIN}/email/verify/${verificationCode._id}`;
+    const url = `${APP_ORIGIN}/email/verify/${newVerificationCode.id}`;
     const {error} = await sendMail({
         to: newUser.email,
         ...getVerifyEmailTemplate(url),
@@ -66,14 +68,16 @@ export const createAccount = async (data:CreateAccountParams) => {
     }
 
     // Create session
-    const session = await SessionModel.create({
-        userId: user._id,
-        userAgent: data.userAgent,
-    });
-
+    const newSession = await prisma.session.create({
+        data: {
+            userId: newUser.id,
+            userAgent: data.userAgent,
+            expiresAt: thirtyDaysFromNow()
+        }
+    })
     // Sign access token & refresh token
     const refreshToken = jwt.sign(
-        { sessionId: session._id },
+        { sessionId: newSession.id },
         JWT_REFRESH_SECRET, {
             audience: ['user'],
             expiresIn: "30d",
@@ -82,8 +86,8 @@ export const createAccount = async (data:CreateAccountParams) => {
 
     const accessToken = jwt.sign(
         {
-            userId: user._id,
-            sessionId: session._id
+            userId: newUser.id,
+            sessionId: newSession.id
         },
         JWT_SECRET, {
             audience: ['user'],
@@ -92,8 +96,9 @@ export const createAccount = async (data:CreateAccountParams) => {
     );
 
     // Return user and tokens
+    const {id, password, ...publicUser} = newUser;
     return {
-        user: user.omitPassword(),
+        user: publicUser,
         accessToken,
         refreshToken
     }
