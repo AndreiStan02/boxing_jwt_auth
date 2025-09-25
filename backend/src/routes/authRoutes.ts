@@ -3,6 +3,7 @@ import {
   loginHandler,
   refreshHandler,
   registerHandler,
+  verifyEmailHandler,
 } from "src/controller/authController.js";
 
 export const authRoutes = Router();
@@ -11,3 +12,4 @@ export const authRoutes = Router();
 authRoutes.post("/register", registerHandler);
 authRoutes.post("/login", loginHandler);
 authRoutes.get("/refresh", refreshHandler);
+authRoutes.get("/email/verify/:code", verifyEmailHandler);

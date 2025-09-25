@@ -3,6 +3,7 @@ import {
   createAccount,
   loginUser,
   refreshUserAccessToken,
+  verifyEmail,
 } from "src/services/authServices.js";
 import { appAsert } from "src/util/appAsert.js";
 import { catchErrors } from "src/util/catchErrors.js";
@@ -31,6 +32,8 @@ const loginSchema = z.object({
   unhashedPassword: z.string().min(6).max(255),
   userAgent: z.string().optional(),
 });
+
+const verificationCodeSchema = z.string().min(1).max(25);
 
 export const registerHandler = catchErrors(async (req, res) => {
   // validate request
@@ -77,4 +80,14 @@ export const refreshHandler = catchErrors(async (req, res) => {
     .json({
       message: "Access token refreshed",
     });
+});
+
+export const verifyEmailHandler = catchErrors(async (req, res) => {
+  const verificationCode = verificationCodeSchema.parse(req.params.code);
+
+  await verifyEmail(verificationCode);
+
+  return res.status(OK).json({
+    message: "Email was succesfuly verified",
+  });
 });

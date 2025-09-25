@@ -5,7 +5,12 @@ import {
   JWT_REFRESH_SECRET,
   JWT_SECRET,
 } from "src/constants/env.js";
-import { CONFLICT, UNAUTHORIZED } from "src/constants/http.js";
+import {
+  CONFLICT,
+  INTERNAL_SERVER_ERROR,
+  NOT_FOUND,
+  UNAUTHORIZED,
+} from "src/constants/http.js";
 import VerificationCodeType from "src/constants/verificationCodeType.js";
 import prisma from "src/db/prismaClient.js";
 import { appAsert } from "src/util/appAsert.js";
@@ -223,5 +228,44 @@ export const refreshUserAccessToken = async (refreshToken: string) => {
   return {
     accessToken: accessToken,
     newRefreshToken: newRefreshToken,
+  };
+};
+
+export const verifyEmail = async (code: string) => {
+  console.log(code);
+  //Get the verification code
+  const validCode = await prisma.verificationCode.findFirst({
+    where: {
+      id: code,
+      type: VerificationCodeType.EmailVerification,
+      expiresAt: {
+        gt: new Date(),
+      },
+    },
+  });
+  appAsert(validCode, NOT_FOUND, "Invalid or expired verification code");
+
+  //Update user verified to true
+  const user = await prisma.user.update({
+    where: {
+      id: validCode.userId,
+    },
+    data: {
+      verified: true,
+    },
+  });
+  appAsert(user, INTERNAL_SERVER_ERROR, "Failed to verify email");
+
+  //Delete verification code from db
+  await prisma.verificationCode.delete({
+    where: {
+      id: validCode.id,
+    },
+  });
+
+  //Return user
+  const { id, password, ...publicUser } = user;
+  return {
+    user: publicUser,
   };
 };

@@ -19,6 +19,7 @@ model User {
   username  String   @unique
   email     String
   password  String
+  verified  Boolean  @default(false)
   createdAt DateTime @default(now())
 }
 
