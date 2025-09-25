@@ -1,4 +1,5 @@
 import { CREATED, OK, UNAUTHORIZED } from "src/constants/http.js";
+import prisma from "src/db/prismaClient.js";
 import {
   createAccount,
   loginUser,
@@ -8,10 +9,12 @@ import {
 import { appAsert } from "src/util/appAsert.js";
 import { catchErrors } from "src/util/catchErrors.js";
 import {
+  clearAuthCookies,
   getAccessTokenCookieOptions,
   getRefreshTokenCookieOptions,
   setAuthCookies,
 } from "src/util/cookies.js";
+import { verifyToken } from "src/util/jwt.js";
 import z from "zod";
 
 const registerSchema = z
@@ -60,6 +63,23 @@ export const loginHandler = catchErrors(async (req, res) => {
   // return response
   return setAuthCookies({ res, accessToken, refreshToken }).status(OK).json({
     message: "Login successfull.",
+  });
+});
+
+export const logoutHandler = catchErrors(async (req, res) => {
+  const accessToken = req.cookies.accessToken;
+  const { payload } = verifyToken(accessToken);
+
+  if (payload) {
+    await prisma.session.delete({
+      where: {
+        id: payload.sessionId,
+      },
+    });
+  }
+
+  return clearAuthCookies(res).status(OK).json({
+    message: "Logout successful",
   });
 });
 
