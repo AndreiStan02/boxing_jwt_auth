@@ -9,18 +9,25 @@ import {
   CONFLICT,
   INTERNAL_SERVER_ERROR,
   NOT_FOUND,
+  TOO_MANY_REQUESTS,
   UNAUTHORIZED,
 } from "src/constants/http.js";
 import VerificationCodeType from "src/constants/verificationCodeType.js";
 import prisma from "src/db/prismaClient.js";
 import { appAsert } from "src/util/appAsert.js";
 import {
+  fiveMinutesAgo,
   ONE_DAY_MS,
+  oneHourFromNow,
   oneYearFromNow,
   thirtyDaysFromNow,
 } from "src/util/date.js";
 import { RefreshTokenPayload, verifyToken } from "src/util/jwt.js";
-import { getVerifyEmailTemplate, sendMail } from "src/util/mail.js";
+import {
+  getPasswordResetTemplate,
+  getVerifyEmailTemplate,
+  sendMail,
+} from "src/util/mail.js";
 
 type CreateAccountParams = {
   username: string;
@@ -232,7 +239,6 @@ export const refreshUserAccessToken = async (refreshToken: string) => {
 };
 
 export const verifyEmail = async (code: string) => {
-  console.log(code);
   //Get the verification code
   const validCode = await prisma.verificationCode.findFirst({
     where: {
@@ -265,6 +271,113 @@ export const verifyEmail = async (code: string) => {
 
   //Return user
   const { id, password, ...publicUser } = user;
+  return {
+    user: publicUser,
+  };
+};
+
+export const sendPasswordResetEmail = async (email: string) => {
+  //Get the user by email
+  const user = await prisma.user.findFirst({
+    where: {
+      email: email,
+    },
+  });
+  appAsert(user, NOT_FOUND, "User not found");
+
+  //Check email rate limit
+  const fiveMinAgo = fiveMinutesAgo();
+  const count = await prisma.verificationCode.count({
+    where: {
+      userId: user.id,
+      type: VerificationCodeType.PasswordReset,
+      createdAt: {
+        gt: fiveMinAgo,
+      },
+    },
+  });
+
+  appAsert(
+    count <= 1,
+    TOO_MANY_REQUESTS,
+    "Too many requests, please try again later"
+  );
+
+  //Create verification code
+  const expiresAt = oneHourFromNow();
+  const verificationCode = await prisma.verificationCode.create({
+    data: {
+      userId: user.id,
+      type: VerificationCodeType.PasswordReset,
+      expiresAt: expiresAt,
+    },
+  });
+
+  //Send verification email
+  const url = `${APP_ORIGIN}/password/reset?code=${verificationCode.id}&exp=${expiresAt.getTime()}`;
+  const { data, error } = await sendMail({
+    to: user.email,
+    ...getPasswordResetTemplate(url),
+  });
+  appAsert(
+    data?.id,
+    INTERNAL_SERVER_ERROR,
+    `${error?.name} - ${error?.message}`
+  );
+
+  //Return success
+  return {
+    url,
+    emailId: data.id,
+  };
+};
+
+type ResetPasswordParams = {
+  newPassword: string;
+  verificationCode: string;
+};
+
+export const resetPassword = async ({
+  newPassword,
+  verificationCode,
+}: ResetPasswordParams) => {
+  const validCode = await prisma.verificationCode.findFirst({
+    //Get verification code
+    where: {
+      id: verificationCode,
+      type: VerificationCodeType.PasswordReset,
+      expiresAt: { gt: new Date() },
+    },
+  });
+  appAsert(validCode, NOT_FOUND, "Invalid or expired verification code");
+
+  //Update users password
+  const updatedUser = await prisma.user.update({
+    where: {
+      id: validCode.userId,
+    },
+    data: {
+      password: await bcrypt.hash(newPassword, 10),
+    },
+  });
+  appAsert(updatedUser, INTERNAL_SERVER_ERROR, "Faild to reset password");
+
+  //Delete the verification code
+  await prisma.verificationCode.delete({
+    where: {
+      id: verificationCode,
+    },
+  });
+
+  //Delete all sessions
+  await prisma.session.deleteMany({
+    where: {
+      userId: updatedUser.id,
+    },
+  });
+
+  //Return user
+  const { id, password, ...publicUser } = updatedUser;
   return {
     user: publicUser,
   };
