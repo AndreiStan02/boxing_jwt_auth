@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import bgImage from '../assets/signBackground.jpg';
 
 const SignUp = () => {
@@ -17,7 +18,7 @@ const SignUp = () => {
                     <input type="password" className="input w-full" placeholder="Confirm Password" />
                 </fieldset>
                 <button className='btn btn-m w-full mb-2'>Sign up</button>
-                <p className='text-xs'>Already have an account? <a className='link'>Log in.</a></p>
+                <p className='text-xs'>Already have an account? <Link to="/login" className='link'>Log in.</Link></p>
                 </div>
             </div>
             <div className="w-3/5 h-full relative overflow-hidden rounded-r-3xl">

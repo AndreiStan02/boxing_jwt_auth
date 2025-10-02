@@ -1,6 +1,16 @@
-import bgImage from '../assets/loginBackground.jpg';
+import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import bgImage from "../assets/loginBackground.jpg";
+import { useLogIn } from "../hooks/useLogIn.js";
 
 const Login = () => {
+    const location = useLocation()
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const redirectUrl = location.state?.redirectUrl || "/"
+
+    const { logIn, isPending, isError } = useLogIn(redirectUrl);
+
   return (
       <div className="h-screen w-screen flex items-center justify-center p-4 overflow-hidden">
         <div className='h-full w-full shadow-2xl rounded-3xl shadow-accent flex'>
@@ -11,14 +21,39 @@ const Login = () => {
                 <p className='text-m mb-4 text-accent'>We Are Happy To See You Back Again</p>
                 <fieldset className="fieldset mb-4">
                     <legend className="fieldset-legend text-accent-contents">Log into your account.</legend>
-                    <input type="text" className="input mb-1 w-full" placeholder="User Name or Email" />
-                    <input type="password" className="input w-full" placeholder="Password" />
-                    <div className="flex justify-end">
-                    <a className='link'>Forgot Password?</a>
-                    </div>
+                    <form onSubmit={(e) => {
+                        e.preventDefault();
+                        logIn({ usernameOrEmail: email, unhashedPassword: password });
+                    }}>
+                        <input
+                            type="text"
+                            className="input mb-1 w-full"
+                            placeholder="User Name or Email"
+                            value={email}
+                            onChange={(e) => {setEmail(e.target.value)}}
+                            autoComplete="email"
+                        />
+                        <input
+                            type="password"
+                            className="input w-full"
+                            placeholder="Password"
+                            value={password}
+                            onChange={(e) => { setPassword(e.target.value) }}
+                            autoComplete="current-password"
+                        />
+                        <div className="flex justify-end">
+                            <a className='link'>Forgot Password?</a>
+                        </div>
+                        <button
+                            type="submit"
+                            className='btn btn-m w-full mb-2 mt-4'
+                            disabled={!email || password.length < 6 || isPending}
+                        >
+                            {isPending ? 'Logging in...' : 'Log In'}
+                        </button>
+                    </form>
                 </fieldset>
-                <button className='btn btn-m w-full mb-2'>Log In</button>
-                <p className='text-xs'>Dont have an account? <a className='link'>Sign up.</a></p>
+                <p className='text-xs'>Dont have an account? <Link to="/register" className='link'>Sign up.</Link></p>
                 </div>
             </div>
             <div className="w-3/5 h-full relative overflow-hidden rounded-r-3xl">

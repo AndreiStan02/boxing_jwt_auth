@@ -5,6 +5,7 @@ import { APP_ORIGIN, PORT } from "./constants/env.js";
 import { OK } from "./constants/http.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { authRoutes } from "./routes/authRoutes.js";
+import { userRoutes } from "./routes/userRoutes.js";
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.get("/", (req, res) => {
 app.use(errorHandler);
 
 app.use("/auth", authRoutes);
+app.use("/user", userRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server started on ${PORT}`);

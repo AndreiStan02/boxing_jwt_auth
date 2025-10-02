@@ -1,8 +1,27 @@
+import { Route, Routes, useNavigate } from 'react-router-dom';
+import AppContainer from './components/AppContainer';
+import { setNavigate } from './lib/navigation';
+import Login from './pages/Login';
 import SignUp from './pages/SignUp';
 
+export const Home = () => {
+  return <div>Home</div>;
+};
+
 const App = () => {
+  const navigate = useNavigate();
+  setNavigate(navigate);
   return (
-    <SignUp />
+  <Routes>
+    <Route path="/" element={<AppContainer />} />
+    <Route path='/login' element={<Login />} />
+    <Route path='/register' element={<SignUp />} />
+      {/*
+      <Route path='/email/verify/:code' element={<VerifyEmail />} />
+      <Route path='/password/forgot' element={<ForgotPassword />} />
+      <Route path='/password/reset' element={<ResetPassword />} />
+      */}
+  </Routes>
   );
 };
 
