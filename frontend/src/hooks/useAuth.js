@@ -1,29 +1,19 @@
-import { useEffect, useState } from "react";
-import { getUser } from "../lib/api"; // tu instancia de axios configurada
+import { useQuery } from "@tanstack/react-query";
+import { getUser } from "../lib/api";
 
-const useAuth = () => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+export const AUTH = "auth";
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        setLoading(true);
-        const data = await getUser();
-        setUser(data);
-      } catch (err) {
-        setUser(null);
-        setError(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUser();
-  }, []);
-
-  return { user, loading, error, isAuthenticated: !!user };
+const useAuth = (opts = {}) => {
+  const { data: user, ...rest } = useQuery({
+    queryKey: [AUTH],
+    queryFn: getUser,
+    staleTime: Infinity,
+    ...opts,
+  });
+  return {
+    user,
+    ...rest,
+  };
 };
 
 export default useAuth;

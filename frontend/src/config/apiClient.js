@@ -1,5 +1,6 @@
 import axios from "axios";
 import { navigate } from "../lib/navigation";
+import queryClient from "./queryClient";
 
 const options = {
   baseURL: import.meta.env.VITE_API_URL,
@@ -23,6 +24,7 @@ API.interceptors.response.use(
         return TokenRefreshClient(config);
         // eslint-disable-next-line no-unused-vars
       } catch (error) {
+        queryClient.clear();
         navigate("/login", {
           state: {
             redirectUrl: window.location.pathname,

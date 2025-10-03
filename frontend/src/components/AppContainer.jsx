@@ -1,14 +1,17 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, Outlet } from "react-router-dom";
 import useAuth from "../hooks/useAuth.js";
+import Home from "../pages/Home.jsx";
 
 const AppContainer = () => {
-  const { user, loading } = useAuth();
-  console.log(user);
-    return loading ? (
+  const { user, isLoading } = useAuth();
+  return isLoading ? (
+      <div className="flex justify-center align-middle h-screen">
         <span className="loading loading-dots loading-xl"></span>
+      </div>
     ) : user? (
         <div>
-          <h1>Home</h1>
+          <Home />
+          <Outlet />
         </div>
     ) : (
          <Navigate

@@ -1,15 +1,28 @@
+import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import bgImage from "../assets/loginBackground.jpg";
-import { useLogIn } from "../hooks/useLogIn.js";
+import { login } from "../lib/api";
 
 const Login = () => {
     const location = useLocation()
+    const navigate = useNavigate()
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const redirectUrl = location.state?.redirectUrl || "/"
 
-    const { logIn, isPending, isError } = useLogIn(redirectUrl);
+    const {
+        mutate: signIn,
+        isPending,
+        isError
+    } = useMutation({
+        mutationFn: login,
+        onSuccess: () => {
+            navigate(redirectUrl,{
+                replace: true
+            })
+        }
+    });
 
   return (
       <div className="h-screen w-screen flex items-center justify-center p-4 overflow-hidden">
@@ -21,9 +34,8 @@ const Login = () => {
                 <p className='text-m mb-4 text-accent'>We Are Happy To See You Back Again</p>
                 <fieldset className="fieldset mb-4">
                     <legend className="fieldset-legend text-accent-contents">Log into your account.</legend>
-                    <form onSubmit={(e) => {
-                        e.preventDefault();
-                        logIn({ usernameOrEmail: email, unhashedPassword: password });
+                          <form onSubmit={(e) => {
+                              e.preventDefault(); signIn({ usernameOrEmail: email, unhashedPassword: password, });
                     }}>
                         <input
                             type="text"
