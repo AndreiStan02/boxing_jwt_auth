@@ -54,7 +54,7 @@ const Login = () => {
                             autoComplete="current-password"
                         />
                         <div className="flex justify-end">
-                            <a className='link'>Forgot Password?</a>
+                            <p className='text-xs'><Link to="/password/forgot" className='link'>Forgot Password?</Link></p>
                         </div>
                         <button
                             type="submit"
